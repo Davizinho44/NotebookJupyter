@@ -1,0 +1,66 @@
+arquivo --> analise.py
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.preprocessing import StandardScaler # <-- Nova ferramenta para arrumar a escala!
+
+# 1. CARREGAR DADOS
+try:
+    dados = pd.read_csv('dados.csv')
+except FileNotFoundError:
+    print("Erro: O arquivo 'dados.csv' não foi encontrado.")
+    exit()
+
+# 2. SEPARAR VARIÁVEIS
+X = dados[['precipitacao', 'umidade_especifica', 'umidade_relativa', 'temperatura']]
+y = dados['rendimento']
+
+# 3. PADRONIZAR A ESCALA DOS DADOS (Resolve o aviso da Rede Neural)
+scaler = StandardScaler()
+X_padronizado = scaler.fit_transform(X)
+
+# 4. DIVIDIR EM TREINO E TESTE (usando os dados padronizados)
+X_train, X_test, y_train, y_test = train_test_split(X_padronizado, y, test_size=0.2, random_state=42)
+
+# 5. DEFINIR MODELOS
+modelos = {
+    'RLM': LinearRegression(),
+    'AD': DecisionTreeRegressor(),
+    'RF': RandomForestRegressor(random_state=42),
+    'SVM': SVR(),
+    'RNA': MLPRegressor(max_iter=5000, random_state=42)
+}
+
+# 6. TREINAR OS MODELOS
+print("Desempenho dos Modelos:")
+print("-" * 30)
+
+for nome, modelo in modelos.items():
+    modelo.fit(X_train, y_train) # Treina o modelo
+    y_pred = modelo.predict(X_test) # Testa o modelo
+    
+    # Métricas
+    
+    r2 = r2_score(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    
+    print(f'Modelo: {nome}')
+    print(f'R²: {r2:.4f}')
+    print(f'EQM: {mse:.2f}')
+    print(f'EAM: {mae:.2f}')
+    print("-" * 30)
+
+# 7. COMPARAR REAL VS PREVISTO (Seu código implementado)
+# Usando o RLM (Regressão Linear) em vez de RF, pois ele se sai melhor com poucos dados
+previsoes_totais = modelos['RLM'].predict(X_padronizado)
+dados['Previsao_Modelo'] = previsoes_totais
+
+print("\nComparação: Real vs Previsto (5 primeiras linhas):")
+print(dados[['rendimento', 'Previsao_Modelo']].head())
